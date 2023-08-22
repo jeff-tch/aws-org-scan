@@ -10,7 +10,7 @@
                                                __/ |                             
                                               |___/                              
 
-We made this tool to help cloud security professionals enumerate their AWS Organizations environment looking for potential lateral moves and privilege escalation paths.
+We made this tool to help cloud security professionals enumerate their [AWS Organizations](https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/core-concepts.html) environment looking for potential lateral moves and privilege escalation paths inside the AWS Accounts.
 
 ## How it works
 
