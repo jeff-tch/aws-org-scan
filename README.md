@@ -76,8 +76,8 @@ options:
  
 ## Output
  * This tool displays all its findings on stdout (the screen) during the execution.
- * This tool also saves the lateral moves in a files called by default "*lateral_movement.log*" (see the option --log-file).
- * This tool also saves the escalation paths in a file named like aws_privesc_scan_results_of_{AWS-Account-ID}_by_{Role-Performing-The-Scan}_{Timestamp}.csv.
+ * This tool also saves the lateral moves in a files called by default "*lateral\_movement.log*" (see the option --log-file).
+ * This tool also saves the escalation paths in a file named like aws\_privesc\_scan\_results_of\_{AWS-Account-ID}\_by\_{Role-Performing-The-Scan}\_{Timestamp}.csv.
 
 ### Example of output (when you have the minimum privileges required ...)
 
