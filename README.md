@@ -64,7 +64,7 @@ options:
   --log-file LOG_FILE   The log file.
 ```
 ## TODO
- * Implement a nice output (JSON/CSV/Excel/Graph/... anything better that raw text).
+ * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
  * ...
  
 ## Output
