@@ -34,12 +34,18 @@ The tool also relies on the incredible work of **[Rhino Security Labs](https://r
 One can simply run the script from the command line, and the script will authenticate with the default AWS credentials configured (see **[aws configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)**) :
 
 ```bash
+user@kali:~/$ git clone "https://github.com/jeff-tch/aws-org-scan.git"
+user@kali:~/$ cd aws-org-scan/
+user@kali:~/$ pip install -r requirements.txt
 user@kali:~/$ python3 ./run.py
 ```
 
 It is also possible to provide a preferred AWS profile at runtime (see **[auth using env variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)**)  : 
 
 ```bash
+user@kali:~/$ git clone "https://github.com/jeff-tch/aws-org-scan.git"
+user@kali:~/$ cd aws-org-scan/
+user@kali:~/$ pip install -r requirements.txt
 user@kali:~/$ AWS_PROFILE=your_custom_aws_profile python3 ./run.py
 ```
 
