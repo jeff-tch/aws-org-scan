@@ -77,7 +77,7 @@ options:
 ```
 ## TODO
  * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
- * Document the AWS Permissions that this tool requires to see everything.
+ * Document the set of AWS Permissions this tool requires to see everything.
  * Document the minimum set of AWS Permissions required by this tool.
  
 ## Output

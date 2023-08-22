@@ -69,7 +69,10 @@ def main(args):
     init_identity = sts.get_caller_identity()["Arn"]
     print(f"Script initially running as {init_identity}.")
     print(f"Running AWS Escalate from the identity {init_identity}")
-    escalate(init_session)
+    try:
+        escalate(init_session)
+    except Exception as e:
+        pass
 
     all_accounts, all_roles = discover_targets(init_session)
 
