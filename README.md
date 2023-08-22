@@ -18,7 +18,13 @@ Having an initial access to an AWS Account, this tool to try to enumerate the AW
 
 After the discovery of potential targets, this tool will try to assume each role he acknowledges inside every account. If an AssumeRole succeeds, the tool will recurse to identify a new lateral movement from his new environment.
 
-The tool also relies on the incredible work of **[Rhino Security Labs](https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation/)** to **identify privileges escalation paths** in every AWS account it gets into which each role.
+The tool also relies on the incredible work of **[Rhino Security Labs](https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation/)** to **identify privileges escalation paths** in every AWS account it gets into.
+
+## Security consideration
+
+//!\\\\ This tool perfoms **only read operations**.
+
+**If you customize the code, please make sure you understand what you are doing.**
 
 ## Requirements
 
