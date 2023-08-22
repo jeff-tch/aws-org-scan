@@ -14,9 +14,9 @@ We made this tool to help cloud security professionals enumerate their [AWS Orga
 
 ## How it works
 
-Having an initial access to an AWS Account, this tool to try to enumerate the AWS Account to identify new roles and new AWS Accounts.
+Having an initial access to an AWS Account, this tool tries to enumerate the AWS Account to identify new roles and new AWS Accounts.
 
-After the discovery of potential targets, this tool will try to assume each role he acknowledges inside every account. If an AssumeRole succeeds, the tool will recurse to identify a new lateral movement from his new environment.
+After the discovery of potential targets, this tool will try to assume each role it acknowledges inside every account. If an AssumeRole succeeds, the tool will recurse to identify a new lateral movement from its new environment.
 
 The tool also relies on the incredible work of **[Rhino Security Labs](https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation/)** to **identify privileges escalation paths** in every AWS account it gets into.
 
