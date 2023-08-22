@@ -75,11 +75,6 @@ options:
                         A JSON file containing a list of known roles.
   --log-file LOG_FILE   The log file.
 ```
-## TODO
- * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
- * Implement a way to query which role/account can access which role/account. (Probably requires to first dump the output in a structured way (json/table/...))
- * Document the set of AWS Permissions this tool requires to see everything.
- * Document the minimum set of AWS Permissions required by this tool.
  
 ## Output
  * This tool displays all its findings on stdout (the screen) during the execution.
@@ -202,3 +197,8 @@ Running AWS Escalate from the identity arn:aws:sts::248100021004:assumed-role/ro
 Assume role found | 248100021004::role-Random-Role-Name-XYZ018 --> 248100021004::role-Random-Role-Name-XYZ019
 ................. [ -- Output Skipped -- ] .................
 ```
+## TODO
+ * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
+ * Implement a way to query which role/account can access which role/account. (Probably requires to first dump the output in a structured way (json/table/...))
+ * Document the set of AWS Permissions this tool requires to see everything.
+ * Document the minimum set of AWS Permissions required by this tool.
