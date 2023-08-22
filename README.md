@@ -77,6 +77,7 @@ options:
 ```
 ## TODO
  * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
+ * Implement a way to query which role/account can access which role/account. (Probably requires to first dump the output in a structured way (json/table/...))
  * Document the set of AWS Permissions this tool requires to see everything.
  * Document the minimum set of AWS Permissions required by this tool.
  
