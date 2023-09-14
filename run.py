@@ -15,7 +15,7 @@ def main(args):
     exclusions_regex = args.aws_roles_exluded
 
     # First we attempt to login with the keys provided as arguments
-    # Then we try to use the profile provided or the default profile
+    # Then we try to use the profile provided or the default profile 
     # Last, we ask for the keys to the use
     init_session = None
 
