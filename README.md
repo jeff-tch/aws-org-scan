@@ -22,16 +22,13 @@ The tool also relies on the incredible work of **[Rhino Security Labs](https://r
 
 ## Security consideration
 
-//!\\\\ This tool perfoms **only read operations**.
+* //!\\\\ This tool perfoms **only read operations**.
 
-**If you customize the code, please make sure you understand what you are doing.**
+* **If you customize the code, please make sure you understand what you are doing.**
 
-## Requirements
-
-*  Some valid AWS access keys 
 *  This tool works on best efforts depending on the permission set available. Howerver, for an optimal experience the tool may required the following AWS Permission:
     * **sts:AssumeRole [Mandatory]**
-    * organizations:ListAcounts
+    * organizations:ListAccounts
     * iam:ListRoles
     * iam:ListUsers
     * iam:ListGroups
@@ -52,16 +49,26 @@ The tool also relies on the incredible work of **[Rhino Security Labs](https://r
     * iam:GetGroupPolicy
     * iam:GetPolicyVersion
 
+## Requirements
+
+*  Some valid AWS access keys 
+
+
 ## Use cases and required permissions
 
 ### Pentest Black-box
 For this scenario, you retrieved some valid AWS credentials.
+
 You do not have any information on the environment. 
-You can harvest for some role names and/or some AWS account ids manually and provide themn as input to the tool. (they should be formatted as a JSON list inside a file.)
+
+You can harvest for some role names and/or some AWS account ids manually and provide them as input to the tool. (they should be formatted as a JSON list inside a file. (view the section Usage))
+
+You can try the tool with the permissions assigned to you.
 ### Pentest White-box
 For this scenario, you retrieved some valid AWS credentials.
 You have some info on the environment (log files/source code/...). For example you can list some roles, and retrieve several valuable information to understand the environment and how to exploit some findings of the tool.
-You can harvest for some role names and/or some AWS account ids manually and provide themn as input to the tool. (they should be formatted as a JSON list inside a file.)
+You can harvest for some role names and/or some AWS account ids manually and provide them as input to the tool. (they should be formatted as a JSON list inside a file. (view the section Usage))
+You try the tool with the permissions assigned to you.
 ### IAM Audit inside the AWS Organization
 For this scenarion, you have a read only access to master account of the organization and you may be granted all the permissions needed for your assessment. 
 In this case, you may request an IAM Role or and IAM User with with the following generic permissions:
