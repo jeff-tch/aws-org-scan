@@ -196,6 +196,8 @@ def scan_inline_policies(client):
     target_resources = {"role", "user", "group"}
     local_all_roles = set()
     local_all_accounts = set()
+    identity_list = []
+    inline_policy_list = []
 
     for target_resource in target_resources:
         try :
@@ -203,33 +205,41 @@ def scan_inline_policies(client):
             client, f"list_{target_resource}s", f"{target_resource}s".capitalize()
         )
         except Exception as e :
-            identity_list = []
+            pass
 
         for identity in identity_list:
             identity_name = identity[f"{target_resource}".capitalize() + "Name"]
-            inline_policy_list = perform_list_action(
+            
+            try:
+                inline_policy_list = perform_list_action(
                 client,
                 f"list_{target_resource}_policies",
                 "PolicyNames",
                 {f"{target_resource}".capitalize() + "Name": identity_name},
             )
-            for policy_name in inline_policy_list:
-                arguments = {
+            except:
+                pass
+                
+            try:
+                for policy_name in inline_policy_list:
+                    arguments = {
                     f"{target_resource}".capitalize() + "Name": identity_name,
                     "PolicyName": policy_name,
                 }
-                policy_doc = eval(
+                    policy_doc = eval(
                     f'client.get_{target_resource}_policy(**arguments)["PolicyDocument"]'
                 )
-                resource_refs = re.findall(
+                    resource_refs = re.findall(
                     'arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?[^ "]*',
                     json.dumps(policy_doc),
                 )
-                for ref in resource_refs:
-                    arn_parsing = parse_resource_arn(ref)
-                    if arn_parsing[5].startswith("role"):
-                        local_all_roles.add(arn_parsing[6])
-                    local_all_accounts.add(arn_parsing[3])
+                    for ref in resource_refs:
+                        arn_parsing = parse_resource_arn(ref)
+                        if arn_parsing[5].startswith("role"):
+                            local_all_roles.add(arn_parsing[6])
+                        local_all_accounts.add(arn_parsing[3])
+            except:
+                pass                 
 
     return local_all_accounts, local_all_roles
 

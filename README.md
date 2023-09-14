@@ -29,6 +29,47 @@ The tool also relies on the incredible work of **[Rhino Security Labs](https://r
 ## Requirements
 
 *  Some valid AWS access keys 
+*  This tool works on best efforts depending on the permission set available. Howerver, for an optimal experience the tool may required the following AWS Permission:
+    * **sts:AssumeRole [Mandatory]**
+    * organizations:ListAcounts
+    * iam:ListRoles
+    * iam:ListUsers
+    * iam:ListGroups
+    * iam:ListGroupsForUser
+    * iam:ListPolicies
+    * iam:ListRolePolicies
+    * iam:ListUserPolicies
+    * iam:ListGroupPolicies
+    * iam:ListAttachedRolePolicies
+    * iam:ListAttachedUserPolicies
+    * iam:ListAttachedGroupPolicies
+    * iam:GetPolicy
+    * iam:GetRole
+    * iam:GetRolePolicy
+    * iam:GetUser
+    * iam:GetUserPolicy
+    * iam:GetGroup
+    * iam:GetGroupPolicy
+    * iam:GetPolicyVersion
+
+## Use cases and required permissions
+
+### Pentest Black-box
+For this scenario, you retrieved some valid AWS credentials.
+You do not have any information on the environment. 
+You can harvest for some role names and/or some AWS account ids manually and provide themn as input to the tool. (they should be formatted as a JSON list inside a file.)
+### Pentest White-box
+For this scenario, you retrieved some valid AWS credentials.
+You have some info on the environment (log files/source code/...). For example you can list some roles, and retrieve several valuable information to understand the environment and how to exploit some findings of the tool.
+You can harvest for some role names and/or some AWS account ids manually and provide themn as input to the tool. (they should be formatted as a JSON list inside a file.)
+### IAM Audit inside the AWS Organization
+For this scenarion, you have a read only access to master account of the organization and you may be granted all the permissions needed for your assessment. 
+In this case, you may request an IAM Role or and IAM User with with the following generic permissions:
+* **sts:AssumeRole [Mandatory]**
+* organizations:List*
+* organizations:Get*
+* iam:List*
+* iam:Get*
 
 ## Usage
 One can simply run the script from the command line, and the script will authenticate with the default AWS credentials configured (see **[aws configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)**) :
