@@ -1,7 +1,6 @@
 import boto3, argparse, sys, json, re
 from aws_escalate import escalate
 
-
 DEFAULT_IAM_AWS_REGION = "us-east-1"
 NEW_TARGETS_FOUND_AT_RUNTIME = False
 
@@ -13,9 +12,10 @@ def main(args):
     secret_access_key = args.secret_access_key
     session_token = args.session_token
     log_file = args.log_file
+    exclusions_regex = args.aws_roles_exluded
 
     # First we attempt to login with the keys provided as arguments
-    # Then we try to use the profile provided or the default profile
+    # Then we try to use the profile provided or the default profile 
     # Last, we ask for the keys to the use
     init_session = None
 
@@ -74,7 +74,7 @@ def main(args):
     except Exception as e:
         pass
 
-    all_accounts, all_roles = discover_targets(init_session)
+    all_accounts, all_roles = discover_targets(init_session,exclusions_regex)
 
     # concatenate all the roles we discovered with the list provided as input
     if args.aws_accounts_list is not None:
@@ -124,10 +124,10 @@ def main(args):
              print("########################################### - [{}] - Starting the execution again because someting new was discovered !!! ######################".format(exec_count))
         
         NEW_TARGETS_FOUND_AT_RUNTIME = False
-        current_list_accounts,current_list_roles = enumerate_org(current_list_accounts, current_list_roles, initial_credentials, log_file,blacklist=set())
+        current_list_accounts,current_list_roles = enumerate_org(current_list_accounts, current_list_roles,exclusions_regex, initial_credentials, log_file,blacklist=set())
 
 
-def discover_targets(init_session):
+def discover_targets(init_session,exclusion_regex):
     all_roles = set()
     all_accounts = set()
     
@@ -182,7 +182,13 @@ def discover_targets(init_session):
     found_accounts, found_roles = scan_inline_policies(init_session.client("iam"))
     all_accounts.update(found_accounts)
     all_roles.update(found_roles)
-
+    
+    # exclude the designated roles
+    __all_roles = set(all_roles)
+    for r in __all_roles :
+        if bool(re.search(exclusion_regex,r)) :
+            all_roles.remove(r)
+            
     return all_accounts, all_roles
 
 
@@ -249,7 +255,7 @@ def perform_list_action(client, api_call_name, field_name, args=None):
 
 
 def enumerate_org(
-    accounts, roles, creds, log_file, externalIDs=None, blacklist=set(), recursing=False
+    accounts, roles,exclusions_regex, creds, log_file, externalIDs=None, blacklist=set(), recursing=False
 ):
     local_blacklist = blacklist
     
@@ -263,7 +269,7 @@ def enumerate_org(
             )
             if track_id not in local_blacklist:
                 local_blacklist.add(track_id)
-                result = move(role, account, creds, role_list=roles, account_list=accounts)
+                result = move(role, account, creds,exclusions_regex, role_list=roles, account_list=accounts)
 
             if bool(result):
                 # TODO : implement externalId
@@ -276,7 +282,8 @@ def enumerate_org(
                 print("-" * len(log_entry))
                 enumerate_org(
                     accounts, 
-                    roles,   
+                    roles,
+                    exclusions_regex,   
                     result,
                     log_file,
                     externalIDs=None,
@@ -286,7 +293,7 @@ def enumerate_org(
     return list(accounts)[:],list(roles)[:]
 
 
-def move(roleName: str, accountID: str, withCreds: dict,role_list=None,account_list=None):
+def move(roleName: str, accountID: str, withCreds: dict,exclusions_regex: str,role_list=None,account_list=None):
     """
     roleName:  The role we are trying to assume
     accountID: The ID of the target account
@@ -400,7 +407,7 @@ def move(roleName: str, accountID: str, withCreds: dict,role_list=None,account_l
             # Discover new roles and accounts from our new account   
              
             try:
-                found_accounts, found_roles = discover_targets(escalation_session)
+                found_accounts, found_roles = discover_targets(escalation_session,exclusions_regex)
                 new_acc = found_accounts.union(set(account_list)) - found_accounts.intersection(set(account_list))
                 for acc in new_acc :
                     if acc not in account_list :
@@ -484,6 +491,12 @@ if __name__ == "__main__":
         required=False,
         default=None,
         help="A JSON file containing a list of known roles.",
+    )
+    parser.add_argument(
+        "--aws-roles-exluded",
+        required=False,
+        default="^(AWSReserved|AWSServiceRoleFor|aws-reserved/|aws-service-role/|AWS-).*",
+        help="A REGEX used to exclude several roles from the discovery process.",
     )
     parser.add_argument(
         "--log-file",
