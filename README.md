@@ -69,10 +69,12 @@ options:
                         The AWS secret access key to use for authentication.
   --session-token SESSION_TOKEN
                         The AWS session token to use for authentication, if there is one.
-  --aws-accounts-list AWS_ACCOUNTS_LIST
+  --aws-accounts-list AWS_ACCOUNTS_LIST_FILE
                         A JSON file containing a list of known AWS account IDs.
   --aws-roles-list AWS_ROLES_LIST
                         A JSON file containing a list of known roles.
+  --aws-roles-exluded REGEX
+                        A REGEX used to exclude several roles from the discovery process.
   --log-file LOG_FILE   The log file.
 ```
  
