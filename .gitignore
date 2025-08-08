@@ -165,3 +165,5 @@ test-*
 *key*
 *pass*
 *cred*
+*.csv
+.vs*
