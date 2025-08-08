@@ -8,7 +8,7 @@ NEW_TARGETS_FOUND_AT_RUNTIME = False
 def init_graph_data_file():
     with open(GRAPH_DATA_OUTPUT_FILE, mode='wt', encoding='utf-8' ,newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["SourceAWSAccountId","SourceAWSRoleName","TargetAccountId","TargetAWSRoleName"])
+        writer.writerow(["SourceAWSAccountId","SourceAWSRoleName","TargetAWSAccountId","TargetAWSRoleName"])
 
 def main(args):
     global NEW_TARGETS_FOUND_AT_RUNTIME
@@ -177,7 +177,7 @@ def discover_targets(init_session,exclusion_regex):
             PolicyArn=policy["Arn"], VersionId=default_version_id
         )["PolicyVersion"]["Document"]
         resource_refs = re.findall(
-            "arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?[^ \"]*",
+            "arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:/\n]*[:/]?[^ \"]*",
             json.dumps(policy_doc),
         )
         for ref in resource_refs:
@@ -237,7 +237,7 @@ def scan_inline_policies(client):
                     f'client.get_{target_resource}_policy(**arguments)["PolicyDocument"]'
                 )
                     resource_refs = re.findall(
-                    'arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?[^ "]*',
+                    'arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:/\n]*[:/]?[^ "]*',
                     json.dumps(policy_doc),
                 )
                     for ref in resource_refs:
@@ -467,8 +467,8 @@ def parse_resource_arn(string):
     arn_pattern = "^arn:(?P<Partition>[^:\n]*):"
     arn_pattern += "(?P<Service>[^:\n]*):(?P<Region>[^:\n]*):"
     arn_pattern += "(?P<AccountID>[^:\n]*):"
-    arn_pattern += "(?P<Ignore>(?P<ResourceType>[^:\/\n]*)"
-    arn_pattern += "[:\/])?(?P<Resource>.*)$"
+    arn_pattern += "(?P<Ignore>(?P<ResourceType>[^:/\n]*)"
+    arn_pattern += "[:/])?(?P<Resource>.*)$"
     r = re.findall(arn_pattern, string)
     return r[0]
 
@@ -533,32 +533,37 @@ if __name__ == "__main__":
 
 
 """
-SourceAWSAccountId","SourceAWSRoleName","TargetAccountId","TargetAWSRoleName
+SourceAWSAccountId","SourceAWSRoleName","TargetAWSAccountId","TargetAWSRoleName
+
 ### GRAPH QUERIES TO POPULATE NEO4J
-
 ## CREATE ENTITIES
-
 # CREATE THE ENTITIES FOR AWS ACCOUNTS
+# CREATE THE ENTITIES FOR INDENTITIES
+## CREATE THE RELATIONSHIPS
+# CREATE THE 'AWS_ACCOUNT_CONTAINS_RESOURCE' RELATIONSHIP BETWEEN AN ACCOUNT AND A ROLE
+# CREATE THE 'AWS_IDENTITY_CAN_ASSUME' RELATIONSHIP BETWEEN TWO IDENTITIES.
 
 LOAD CSV WITH HEADERS FROM 'file:///assume-roles.csv' AS row
 WITH row WHERE row.SourceAWSAccountId IS NOT NULL
 MERGE (awsAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
-MERGE (awsAccount2:AWSAccount {AWSAccountId: row.TargetAccountId})
-MERGE (awsIdentity1:AWSIdentity {AWSAccountId: row.SourceAccountId,AWSIdentityName: row.SourceAWSRoleName, AWSIdentityType: "IAM-ROLE"})
-MERGE (awsIdentity2:AWSIdentity {AWSAccountId: row.TargetAccountId,AWSIdentityName: row.TargetAWSRoleName, AWSIdentityType: "IAM-ROLE"})
-MERGE (awsAccount1)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity1)
-MERGE (awsAccount2)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity2)
+MERGE (awsAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+
+WITH row
+MATCH (createdAWSAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
+MERGE (awsIdentity1:AWSIdentity {AWSAccountId: createdAWSAccount1.AWSAccountId,AWSIdentityName: row.SourceAWSRoleName, name: row.SourceAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,awsIdentity1
+MATCH (createdAWSAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+MERGE (awsIdentity2:AWSIdentity {AWSAccountId: createdAWSAccount2.AWSAccountId,AWSIdentityName: row.TargetAWSRoleName, name: row.TargetAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,createdAWSAccount2,awsIdentity2,awsIdentity1
+MERGE (createdAWSAccount1)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity1)
+MERGE (createdAWSAccount2)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity2)
 MERGE (awsIdentity1)-[:AWS_IDENTITY_CAN_ASSUME]->(awsIdentity2);
 
-# CREATE THE ENTITIES FOR INDENTITIES
 
+### GRAPH QUERIES TO FIND ESCALATION PATHS
 
-## CREATE THE RELATIONSHIPS
-
-# CREATE THE 'AWS_ACCOUNT_CONTAINS_RESOURCE' RELATIONSHIP BETWEEN AN ACCOUNT AND A ROLE
-
-
-# CREATE THE 'AWS_IDENTITY_CAN_ASSUME' RELATIONSHIP BETWEEN TWO IDENTITIES.
 
 
 
