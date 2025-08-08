@@ -562,6 +562,12 @@ MERGE (awsIdentity1)-[:AWS_IDENTITY_CAN_ASSUME]->(awsIdentity2);
 
 ### GRAPH QUERIES TO FIND ESCALATION PATHS
 
+## Find All relationships
+MATCH p=()-->() RETURN p
+
+## Find all assume role paths
+MATCH p=()-[r:AWS_IDENTITY_CAN_ASSUME]->() RETURN p 
+
 
 
 

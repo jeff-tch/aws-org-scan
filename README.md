@@ -165,6 +165,21 @@ MERGE (awsIdentity1)-[:AWS_IDENTITY_CAN_ASSUME]->(awsIdentity2);
 ### How to query the Neo4j database
 
 ```cypher
+## Find All relationships
+MATCH p=()-->() RETURN p
+
+## Find all assume role paths
+MATCH p=()-[r:AWS_IDENTITY_CAN_ASSUME]->() RETURN p 
+
+
+## Find all the paths starting from a specific AWS Account
+MATCH p=(:AWSAccount {AWSAccountId: "500007001002"})-[*]->(:AWSIdentity) RETURN p 
+
+## Find all the paths starting from a specific AWS Role
+MATCH p=(:AWSIdentity {name: "role-XYZ"})-[*]->(:AWSIdentity) RETURN p
+
+## Find all the paths starting from a specific AWS role
+
 
 ```
 
