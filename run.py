@@ -1,8 +1,14 @@
-import boto3, argparse, sys, json, re
+import boto3, argparse, sys, json, re, csv
 from aws_escalate import escalate
 
 DEFAULT_IAM_AWS_REGION = "us-east-1"
+GRAPH_DATA_OUTPUT_FILE = "assume-roles.csv"
 NEW_TARGETS_FOUND_AT_RUNTIME = False
+
+def init_graph_data_file():
+    with open(GRAPH_DATA_OUTPUT_FILE, mode='wt', encoding='utf-8' ,newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["SourceAWSAccountId","SourceAWSRoleName","TargetAWSAccountId","TargetAWSRoleName"])
 
 def main(args):
     global NEW_TARGETS_FOUND_AT_RUNTIME
@@ -18,6 +24,7 @@ def main(args):
     # Then we try to use the profile provided or the default profile 
     # Last, we ask for the keys to the use
     init_session = None
+    init_graph_data_file()
 
     if access_key_id is None or secret_access_key is None:
         default_profile_available = False
@@ -170,7 +177,7 @@ def discover_targets(init_session,exclusion_regex):
             PolicyArn=policy["Arn"], VersionId=default_version_id
         )["PolicyVersion"]["Document"]
         resource_refs = re.findall(
-            "arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?[^ \"]*",
+            "arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:/\n]*[:/]?[^ \"]*",
             json.dumps(policy_doc),
         )
         for ref in resource_refs:
@@ -230,7 +237,7 @@ def scan_inline_policies(client):
                     f'client.get_{target_resource}_policy(**arguments)["PolicyDocument"]'
                 )
                     resource_refs = re.findall(
-                    'arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?[^ "]*',
+                    'arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:/\n]*[:/]?[^ "]*',
                     json.dumps(policy_doc),
                 )
                     for ref in resource_refs:
@@ -287,6 +294,11 @@ def enumerate_org(
                     "{}::{}".format(creds["SourceAccount"], creds["SourceRole"]),
                     "{}::{}".format(result["SourceAccount"], result["SourceRole"]),
                 )
+                graph_db_entry = [creds["SourceAccount"],creds["SourceRole"],result["SourceAccount"],result["SourceRole"]]
+                with open(GRAPH_DATA_OUTPUT_FILE, mode='at+', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(graph_db_entry)
+
                 print(log_entry)
                 log(log_entry, log_file)
                 print("-" * len(log_entry))
@@ -414,27 +426,27 @@ def move(roleName: str, accountID: str, withCreds: dict,exclusions_regex: str,ro
             except Exception as e:
                 pass
                
-            # Discover new roles and accounts from our new account   
+        # Discover new roles and accounts from our new account   
              
-            try:
-                found_accounts, found_roles = discover_targets(escalation_session,exclusions_regex)
-                new_acc = found_accounts.union(set(account_list)) - found_accounts.intersection(set(account_list))
-                for acc in new_acc :
-                    if acc not in account_list :
-                        NEW_TARGETS_FOUND_AT_RUNTIME = True
-                        print("Discovered new AWS Account :: {}".format(acc))
-                        account_list.append(acc)
+        try:
+            found_accounts, found_roles = discover_targets(escalation_session,exclusions_regex)
+            new_acc = found_accounts.union(set(account_list)) - found_accounts.intersection(set(account_list))
+            for acc in new_acc :
+                if acc not in account_list :
+                    NEW_TARGETS_FOUND_AT_RUNTIME = True
+                    print("Discovered new AWS Account :: {}".format(acc))
+                    account_list.append(acc)
                         
-                new_rol = found_roles.union(set(role_list)) - found_roles.intersection(set(role_list))
-                for rol in new_rol :
-                    if rol not in role_list :
-                        NEW_TARGETS_FOUND_AT_RUNTIME = True
-                        print("Discovered new role :: {}".format(rol))
-                        role_list.append(rol)
+            new_rol = found_roles.union(set(role_list)) - found_roles.intersection(set(role_list))
+            for rol in new_rol :
+                if rol not in role_list :
+                    NEW_TARGETS_FOUND_AT_RUNTIME = True
+                    print("Discovered new role :: {}".format(rol))
+                    role_list.append(rol)
                 
-            except Exception as e:
-                print("An Exception occured while discovering new targets ...")
-                print(e)
+        except Exception as e:
+            print("An Exception occured while discovering new targets ...")
+            print(e)
 
 
         # if it is a role in our account, we revert the modifications
@@ -455,8 +467,8 @@ def parse_resource_arn(string):
     arn_pattern = "^arn:(?P<Partition>[^:\n]*):"
     arn_pattern += "(?P<Service>[^:\n]*):(?P<Region>[^:\n]*):"
     arn_pattern += "(?P<AccountID>[^:\n]*):"
-    arn_pattern += "(?P<Ignore>(?P<ResourceType>[^:\/\n]*)"
-    arn_pattern += "[:\/])?(?P<Resource>.*)$"
+    arn_pattern += "(?P<Ignore>(?P<ResourceType>[^:/\n]*)"
+    arn_pattern += "[:/])?(?P<Resource>.*)$"
     r = re.findall(arn_pattern, string)
     return r[0]
 
@@ -517,3 +529,59 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
+
+
+
+"""
+//### GRAPH QUERIES TO POPULATE NEO4J
+//## CREATE ENTITIES
+//# CREATE THE ENTITIES FOR AWS ACCOUNTS
+//# CREATE THE ENTITIES FOR INDENTITIES
+//## CREATE THE RELATIONSHIPS
+//# CREATE THE 'AWS_ACCOUNT_CONTAINS_RESOURCE' RELATIONSHIP BETWEEN AN ACCOUNT AND A ROLE
+//# CREATE THE 'AWS_IDENTITY_CAN_ASSUME' RELATIONSHIP BETWEEN TWO IDENTITIES.
+
+LOAD CSV WITH HEADERS FROM 'file:///assume-roles.csv' AS row
+WITH row WHERE row.SourceAWSAccountId IS NOT NULL
+MERGE (awsAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
+MERGE (awsAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+
+WITH row
+MATCH (createdAWSAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
+MERGE (awsIdentity1:AWSIdentity {AWSAccountId: createdAWSAccount1.AWSAccountId,AWSIdentityName: row.SourceAWSRoleName, name: row.SourceAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,awsIdentity1
+MATCH (createdAWSAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+MERGE (awsIdentity2:AWSIdentity {AWSAccountId: createdAWSAccount2.AWSAccountId,AWSIdentityName: row.TargetAWSRoleName, name: row.TargetAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,createdAWSAccount2,awsIdentity2,awsIdentity1
+MERGE (createdAWSAccount1)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity1)
+MERGE (createdAWSAccount2)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity2)
+MERGE (awsIdentity1)-[:AWS_IDENTITY_CAN_ASSUME]->(awsIdentity2);
+
+
+### GRAPH QUERIES TO FIND ESCALATION PATHS
+
+## Find All relationships
+MATCH p=()-->() RETURN p
+
+## Find all assume role paths
+MATCH p=()-[r:AWS_IDENTITY_CAN_ASSUME]->() RETURN p 
+
+
+## Find all the paths starting from a specific AWS Account
+MATCH p=(:AWSAccount {AWSAccountId: "500007001002"})-[*]->(:AWSIdentity) RETURN p 
+
+## Find all the paths starting from a specific AWS Role
+MATCH p=(:AWSIdentity {name: "role-XYZ"})-[*]->(:AWSIdentity) RETURN p
+
+## Find all the paths starting from a specific AWS role
+
+
+
+
+
+
+
+
+"""

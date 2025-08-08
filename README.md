@@ -128,8 +128,64 @@ options:
  
 ## Output
  * This tool displays all its findings on stdout (the screen) during the execution.
- * This tool also saves the lateral moves in a files called by default "*lateral\_movement.log*" (see the option --log-file).
+ * This tool also saves the lateral moves in a log file called by default "*lateral\_movement.log*" (see the option --log-file).
+ * This tool also saves the lateral moves in a CSV file called by default "assume-roles.csv"
  * This tool also saves the escalation paths in a file named like aws\_privesc\_scan\_results_of\_{AWS-Account-ID}\_by\_{Role-Performing-The-Scan}\_{Timestamp}.csv.
+
+### How to ingest the CSV file in a Neo4j database
+
+```cypher
+//### GRAPH QUERIES TO POPULATE NEO4J
+//## CREATE ENTITIES
+//# CREATE THE ENTITIES FOR AWS ACCOUNTS
+//# CREATE THE ENTITIES FOR INDENTITIES
+//## CREATE THE RELATIONSHIPS
+//# CREATE THE 'AWS_ACCOUNT_CONTAINS_RESOURCE' RELATIONSHIP BETWEEN AN ACCOUNT AND A ROLE
+//# CREATE THE 'AWS_IDENTITY_CAN_ASSUME' RELATIONSHIP BETWEEN TWO IDENTITIES.
+
+LOAD CSV WITH HEADERS FROM 'file:///assume-roles.csv' AS row
+WITH row WHERE row.SourceAWSAccountId IS NOT NULL
+MERGE (awsAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
+MERGE (awsAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+
+WITH row
+MATCH (createdAWSAccount1:AWSAccount {AWSAccountId: row.SourceAWSAccountId})
+MERGE (awsIdentity1:AWSIdentity {AWSAccountId: createdAWSAccount1.AWSAccountId,AWSIdentityName: row.SourceAWSRoleName, name: row.SourceAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,awsIdentity1
+MATCH (createdAWSAccount2:AWSAccount {AWSAccountId: row.TargetAWSAccountId})
+MERGE (awsIdentity2:AWSIdentity {AWSAccountId: createdAWSAccount2.AWSAccountId,AWSIdentityName: row.TargetAWSRoleName, name: row.TargetAWSRoleName, AWSIdentityType: "IAM-ROLE"})
+
+WITH row,createdAWSAccount1,createdAWSAccount2,awsIdentity2,awsIdentity1
+MERGE (createdAWSAccount1)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity1)
+MERGE (createdAWSAccount2)-[:AWS_ACCOUNT_CONTAINS_RESOURCE]->(awsIdentity2)
+MERGE (awsIdentity1)-[:AWS_IDENTITY_CAN_ASSUME]->(awsIdentity2);
+
+```
+### How to query the Neo4j database 
+
+```cypher
+## Find All relationships
+MATCH p=()-->() RETURN p
+
+## Find all assume role paths
+MATCH p=()-[r:AWS_IDENTITY_CAN_ASSUME]->() RETURN p 
+```
+
+```cypher
+## Find all the paths starting from a specific AWS Account
+MATCH p=(:AWSAccount {AWSAccountId: "500007001002"})-[*]->(:AWSIdentity) RETURN p 
+```
+![Find all the paths starting from a specific AWS Role](images/example-1.png)
+
+```cypher
+## Find all the paths starting from a specific AWS Role
+MATCH p=(:AWSIdentity {name: "role-XYZ"})-[*]->(:AWSIdentity) RETURN p
+```
+![Find all the paths starting from a specific AWS Role](images/example-2.png)
+
+
+
 
 ### Example of output (when you have the minimum privileges required ...)
 
@@ -248,7 +304,5 @@ Assume role found | 248100021004::role-Random-Role-Name-XYZ018 --> 248100021004:
 ................. [ -- Output Skipped -- ] .................
 ```
 ## TODO
- * Implement a nice output (JSON/CSV/Excel/Graph/... anything better than raw text).
- * Implement a way to query which role/account can access which role/account. (Probably requires to first dump the output in a structured way (json/table/...))
- * Document the set of AWS Permissions this tool requires to see everything.
- * Document the minimum set of AWS Permissions required by this tool.
+ * Improve code readability.
+
