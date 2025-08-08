@@ -569,6 +569,15 @@ MATCH p=()-->() RETURN p
 MATCH p=()-[r:AWS_IDENTITY_CAN_ASSUME]->() RETURN p 
 
 
+## Find all the paths starting from a specific AWS Account
+MATCH p=(:AWSAccount {AWSAccountId: "500007001002"})-[*]->(:AWSIdentity) RETURN p 
+
+## Find all the paths starting from a specific AWS Role
+MATCH p=(:AWSIdentity {name: "role-XYZ"})-[*]->(:AWSIdentity) RETURN p
+
+## Find all the paths starting from a specific AWS role
+
+
 
 
 
